@@ -1,0 +1,37 @@
+{
+  "name": "anwar-res-backend",
+  "version": "1.0.0",
+  "description": "Backend server for our restaurant website",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --env-file=.env ./src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Javascript",
+    "Node",
+    "Js"
+  ],
+  "author": "Mazharul Islam",
+  "license": "ISC",
+  "dependencies": {
+    "@libsql/client": "^0.15.15",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.18",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.44.6",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "helmet": "^8.1.0",
+    "resend": "^6.2.0",
+    "socket.io": "^4.8.1",
+    "stripe": "^19.1.0",
+    "uuid": "^13.0.0"
+  },
+  "type": "module",
+  "devDependencies": {
+    "drizzle-kit": "^0.31.5",
+    "nodemon": "^3.1.10"
+  }
+}
