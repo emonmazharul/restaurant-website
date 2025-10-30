@@ -1,40 +1,13 @@
 import Router from 'express'
-import dayjs from "dayjs";
 import Stripe from 'stripe';
 import { v4 as uuid } from 'uuid';
 import { db } from '../db/db.js';
 import { orderTable,salesTable } from '../db/schema.js';
-import { sql,eq,desc } from 'drizzle-orm';
-import { orderBodyMiddleware } from '../middleware/orderBodyMiddleware.js';
+import { eq,desc } from 'drizzle-orm';
+import { bodyChecker, orderMiddleWare } from '../middleware/orderMiddleware.js';
 import { checkoutProductData } from '../utils/checkProductData.js';
 import adminMiddleWare from '../middleware/adminMiddleware.js';
 import { io } from '../server.js';
-
-
-// const now = Math.floor(Date.now() / 1000); // current unix time (seconds)
-// const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
-
-// const orders = await db
-//   .select()
-//   .from(orderTable)
-//   .where(sql`${orderTable.createdAt} BETWEEN ${thirtyDaysAgo} AND ${now}`)
-//   .where(sql`${orderTable.orderCanceled} = 0`)
-//   .where(sql`${orderTable.checkoutCompleted} = 1`);
-
-
-// const salesByDay = Array.from({ length: 30 }, (_, i) => {
-// const day = dayjs().subtract(29 - i, "day").format("YYYY-MM-DD");
-// return { day, sales: 0 };
-// });
-
-// for (const order of orders) {
-//   const orderDay = dayjs.unix(order.createdAt).format("YYYY-MM-DD");
-//   const dayObj = salesByDay.find((d) => d.day === orderDay);
-//   if (dayObj) {
-//     dayObj.sales += order.totalPrice / 100; // convert to £ if stored in pence
-//   }
-// }
-
 
 
 const stripe  = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -47,42 +20,9 @@ router.get('/check', adminMiddleWare, (req,res) => {
     res.send({message:'helllo'});
 })
 
-router.post('/', orderBodyMiddleware,  async (req,res) => {
-    try {
-        
-        if(req.body.paymentMethod == 'cash') {
-            const order = await db.insert(orderTable).values({
-                ...req.body,
-                cart:JSON.stringify(req.body.cart),
-                orderId:uuid(),
-            }).returning();
-            let sale = await db.select().from(salesTable).where(eq(salesTable.saleDate,new Date().toDateString()));
-            if(sale[0]) {
-                await db.update(salesTable).set({
-                    totalSale: sale[0].totalSale + order[0].totalPrice,
-                });
-            } else {
-                await db.insert(salesTable).values({
-                    totalSale:order[0].totalPrice,
-                    saleDate: new Date().toDateString(),
-                });
-            }
-            return res.status(201).send({orderId:order[0].orderId, url:`http://localhost:5000/order/success?orderType=cash&orderId=${order[0].orderId}`});
-        }
-        const session = await stripe.checkout.sessions.create({
-            customer_email:req.body.email,
-            line_items: checkoutProductData(req.body.cart, req.body.orderType),
-            mode: 'payment',
-            success_url: 'http://localhost:5000/order/success?session_id={CHECKOUT_SESSION_ID}&orderType=delivery',
-            cancel_url: 'http://localhost:5000/order/cancel',
-        });
-        const order = await db.insert(orderTable).values({
-            ...req.body,
-            cart:JSON.stringify(req.body.cart),
-            orderId: uuid(),
-            checkoutId:session.id,
-        }).returning();
-        let sale = await db.select().from(salesTable).where(eq(salesTable.saleDate,new Date().toDateString()));
+// add sale to the table
+async function addSale(order) {
+    let sale = await db.select().from(salesTable).where(eq(salesTable.saleDate,new Date().toDateString()));
         if(sale[0]) {
             await db.update(salesTable).set({
                 totalSale: sale[0].totalSale + order[0].totalPrice,
@@ -93,9 +33,41 @@ router.post('/', orderBodyMiddleware,  async (req,res) => {
                 saleDate: new Date().toDateString(),
             });
         }
+}
+
+router.post('/', bodyChecker() ,orderMiddleWare,  async (req,res) => {
+    try {
+        // if payment is cash then we excute this as we don't need make an checkout
+        if(req.body.paymentMethod == 'cash') {
+            const order = await db.insert(orderTable).values({
+                ...req.body,
+                cart:JSON.stringify(req.body.cart),
+                orderId:uuid(),
+            }).returning();
+            addSale(order);
+            io.emit('newOrder', order[0]);
+            return res.status(201).send({orderId:order[0].orderId, url:`http://localhost:5000/order/success?orderType=cash&orderId=${order[0].orderId}`});
+        }
+        // create an payment session
+        const session = await stripe.checkout.sessions.create({
+            customer_email:req.body.email,
+            line_items: checkoutProductData(req.body.cart, req.body.orderType),
+            mode: 'payment',
+            success_url: 'http://localhost:5000/order/success?session_id={CHECKOUT_SESSION_ID}&orderType=delivery',
+            cancel_url: 'http://localhost:5000/order/cancel',
+        });
+        
+        const order = await db.insert(orderTable).values({
+            ...req.body,
+            cart:JSON.stringify(req.body.cart),
+            orderId: uuid(),
+            checkoutId:session.id,
+        }).returning();
+        addSale(order);
         res.status(201).send({orderId:order[0].orderId ,url:session.url});
     } catch (e) {
         console.log(e);
+        res.status(500).send({error:'server crushed', message:'order failed'});
     }
 });
 
@@ -108,7 +80,6 @@ router.get('/', adminMiddleWare,  async (req,res) => {
         })
     } catch(e) {
         console.log(e);
-        throw new Error(e);
         res.status(400).send({error:'bad request', message:e.message});
     }
 })
@@ -162,9 +133,8 @@ router.get('/success' , async (req,res) => {
         
         // if the payment is cash 
         if(orderType && orderType === 'cash') {
-            const order = await db.select().from(orderTable).where(eq(orderTable.orderId, orderId));
-            if(order.length === 0) return res.redirect('/order/cancel');
-            io.emit('newOrder', order[0]);
+            // const order = await db.select().from(orderTable).where(eq(orderTable.orderId, orderId));
+            // if(order.length === 0) return res.redirect('/order/cancel');
             return res.send({message: 'Thanks for your order and it will be ready soon'});
         }
 
@@ -179,7 +149,7 @@ router.get('/success' , async (req,res) => {
         res.send({message:'Thanks for your order and it will be ready soon'});
          
     } catch (e) {
-        res.status(400).send({error:'bad request', message:'something wrong happend'});
+        res.status(400).send({error:'bad request', message:'something wrong happend.Try again'});
     }
 })
 

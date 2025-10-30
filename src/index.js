@@ -11,6 +11,7 @@ import reservationRouter from './route/reservationRoute.js'
 import orderRouter from './route/orderRoute.js'
 import adminRouter from './route/adminRoute.js'
 import saleRouter from './route/saleRoute.js'
+import testRouter from './route/testRoute.js'
 
 // const db = drizzle(process.env.DB_FILE_NAME);
 // await (bread)
@@ -43,6 +44,7 @@ app.use('/reservation', reservationRouter);
 app.use('/order', orderRouter);
 app.use('/admin', adminRouter);
 app.use('/sale', saleRouter);
+app.use('/test', testRouter);
 // app.get('/', (req,res) => {
 //     res.send({message:'welcome to the anware restaurant backend'});
 // })

@@ -3,7 +3,7 @@ import { db } from "../db/db.js";
 import { desc, eq } from "drizzle-orm";
 import { reservationTable } from '../db/schema.js';
 import { emailSender } from "../utils/sendEmail.js";
-
+import {bodyChecker,reservationBodyMiddleware} from '../middleware/reservationMiddleware.js'
 import adminMiddleWare from "../middleware/adminMiddleware.js";
 
 
@@ -26,42 +26,22 @@ router.get('/', adminMiddleWare, async(req,res) =>  {
     }
 })
 
-router.post('/', async (req,res) => {
+router.post('/', bodyChecker(), reservationBodyMiddleware, async (req,res) => {
     try {
-        if(req.body === undefined) {
-            return res.status(400).send({
-                error:'bad request',
-                message:'Not enough information!'
-            });
-
-        }
-        const keys = ['fullName','phone','email', 'guests', 'booking_date','booking_time','special_request'];
-        const isValidBody = keys.every((key) => {
-            if(key == 'special_request') return true;
-            return req.body[key] !== undefined
-        });
-
-        if(!isValidBody) return res.status(400).send({
-            error:'bad request',
-            message: 'Please provide required information',
-        });
-
         const reservation = await db.insert(reservationTable).values({
             ...req.body,
             booking_date: new Date(req.body.booking_date),
             guests:Number(req.body.guests),
         }).returning();
-        setTimeout(() => {
-            res.status(201).send({
+        res.status(201).send({
             data:reservation[0],
             id:reservation[0].id,
             message:'Thank for booking a table with us and we will confirm you as soon as possible.', 
-            });
-        }, 1000);
+        });
     } catch(e){
         res.status(400).send({
             error:'bad request',
-            message:'something wrong happend',
+            message:'server crushed. Please try again',
         })
     }
 })

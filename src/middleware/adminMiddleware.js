@@ -1,10 +1,9 @@
 import { db } from '../db/db.js';
-import { orderTable,usersTable } from '../db/schema.js';
+import { usersTable } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 
 export default async  function adminMiddleWare(req,res,next) {
-    console.log(req.session);
     if (!req.session.admin_id) {
         return res.status(401).send({
             error:'Unauthorized',
@@ -23,7 +22,7 @@ export default async  function adminMiddleWare(req,res,next) {
     } catch (e ) {
         res.send({
             error:'server problem',
-            message:' there is an problem. sorry for this',
+            message:'Serve crushed. Please try again',
         })
 
     }   

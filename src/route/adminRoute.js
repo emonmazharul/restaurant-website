@@ -1,21 +1,33 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
+import  {body,checkExact, validationResult} from 'express-validator'
 import { db } from "../db/db.js";
 import { usersTable } from "../db/schema.js";
 import adminMiddleWare from "../middleware/adminMiddleware.js";
 
 const router = new Router();
 
-router.post('/login', async (req,res) => {
+export const adminLoginBodyChecker = () => {
+    return checkExact([
+        body('email').isEmail(),
+        body('password', 'Please provide a strong passwrod').isLength({min:8}),
+    ]);
+}
+
+
+
+router.post('/login', adminLoginBodyChecker(),  async (req,res) => {
     req.session.admin_id = undefined;
     try {
-        if(req.body == undefined || req.body.email == undefined || req.body.password == undefined) {
+        const bodyValidationResult = validationResult(req).array();
+        // check if the req body is align with our roles otherwise reutn error
+        if(bodyValidationResult.length) {
             return res.status(400).send({
                 error:'bad request',
-                message: 'Invalid email or password',
+                message:'Please provide requied informaiton',
             })
-        }
+        }  
         const user = await db.select().from(usersTable).where(eq(usersTable.email, req.body.email));
         if (user.length == 0) return res.status(400).send({error:'bad request', message:' Invalid email or password'});
         if(user[0].email !== process.env.ADMIN_EMAIL ) return res.status(400).send({error:'bad request', message:' Invalid email or password'});

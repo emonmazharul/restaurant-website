@@ -1,6 +1,6 @@
 import Router from 'express'
+import {body,checkExact,Result,validationResult} from 'express-validator'
 import { menuTable, usersTable } from '../db/schema.js';
-import {drizzle} from 'drizzle-orm/libsql'
 import { eq } from 'drizzle-orm';
 import { db } from "../db/db.js";
 import adminMiddleWare from '../middleware/adminMiddleware.js';
@@ -63,11 +63,20 @@ router.get('/', async (req,res) => {
     }
 })
 
-router.post('/', adminMiddleWare, async (req,res) => {
+
+const addMenuBodyChecker = () =>  {
+    return checkExact([
+        body('category').isString().isIn(['startars', 'traditional', 'tandoori', 'bread']),
+        body('name').isString(),
+        body('price').isNumeric(),
+    ])
+}
+
+router.post('/', addMenuBodyChecker(), adminMiddleWare , async (req,res) => {
     try {
-        const keys = ['category', 'name', 'price'];
-        const isReqBodyValid = req.body ? keys.every(key => req.body[key] !== undefined) : false;
-        if(!isReqBodyValid) return res.status(400).send({error:'bad request', message:'Please provide all required information'});
+        const bodyValidationResult = validationResult(req).array();
+        // if bodyValidationResult lenght is true that's mean we got some invalid req value therfore return an error response
+        if(bodyValidationResult.length) return res.status(400).send({error:'bad request', message:'Please provide all required information'});
         const menu = await db.insert(menuTable).values({
             name:req.body.name,
             price:req.body.price,

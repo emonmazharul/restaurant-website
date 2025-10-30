@@ -14,7 +14,7 @@ router.get('/last-30-days', adminMiddleWare, async (req,res) => {
         });
     } catch(e) {
         console.log(e);
-        res.send(500);
+        res.status(500).send({error:'server crushed', message:'failed to fetche sale report. Server crushed'});
     }
 })
 
