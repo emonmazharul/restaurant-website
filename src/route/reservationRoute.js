@@ -5,6 +5,7 @@ import { reservationTable } from '../db/schema.js';
 import { emailSender } from "../utils/sendEmail.js";
 import {bodyChecker,reservationBodyMiddleware} from '../middleware/reservationMiddleware.js'
 import adminMiddleWare from "../middleware/adminMiddleware.js";
+import { io } from "../server.js";
 
 
 const router = new Router();
@@ -33,12 +34,15 @@ router.post('/', bodyChecker(), reservationBodyMiddleware, async (req,res) => {
             booking_date: new Date(req.body.booking_date),
             guests:Number(req.body.guests),
         }).returning();
+        io.emit("newReservation", reservation[0])
         res.status(201).send({
             data:reservation[0],
             id:reservation[0].id,
             message:'Thank for booking a table with us and we will confirm you as soon as possible.', 
         });
     } catch(e){
+        console.log('shwoing error at resevation table')
+        console.log(e);
         res.status(400).send({
             error:'bad request',
             message:'server crushed. Please try again',

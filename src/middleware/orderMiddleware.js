@@ -12,7 +12,7 @@ export const bodyChecker = () => {
         body('totalPrice').isNumeric(),
         body('paymentMethod').isString().isIn(['cash', 'online']),
         body('orderType').isString().isIn(['collection', 'delivery']),
-        body('cart').isJSON({allow_primitives:true}),
+        body('cart').isArray({min:1}),
         body('deliveryTime').isString(),
         body('fullAddress').optional().isString().trim(),
         body('postCode').optional().isString().trim(),
@@ -28,14 +28,6 @@ export async function orderMiddleWare(req,res,next) {
             reasons: bodyValidationResult,
             message:'Invalid values for making an order.Please read ther error reasons'
         })
-    }
-    const cart = JSON.stringify(req.body.cart);
-    const isValidCart = Array.isArray(cart) && cart.length > 0
-    if(!isValidCart) {
-        return res.status(400).send({
-            error:'bad request',
-            message:'There is no valid cart',
-        });
     }
     if(req.body.orderType === 'delivery' && !req.body.fullAddress && !req.body.postCode) {
         return res.status(400).send({

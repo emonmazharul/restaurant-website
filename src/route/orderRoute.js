@@ -66,7 +66,6 @@ router.post('/', bodyChecker() ,orderMiddleWare,  async (req,res) => {
         addSale(order);
         res.status(201).send({orderId:order[0].orderId ,url:session.url});
     } catch (e) {
-        console.log(e);
         res.status(500).send({error:'server crushed', message:'order failed'});
     }
 });
@@ -79,52 +78,9 @@ router.get('/', adminMiddleWare,  async (req,res) => {
             data:orders,
         })
     } catch(e) {
-        console.log(e);
         res.status(400).send({error:'bad request', message:e.message});
     }
 })
-
-// router.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
-//   let event = request.body;
-//   // Only verify the event if you have an endpoint secret defined.
-//   // Otherwise use the basic event deserialized with JSON.parse
-//   if (process.env.STRIPE_WEBHOOK_KEY) {
-//     // Get the signature sent by Stripe
-//     const signature = request.headers['stripe-signature'];
-//     try {
-//       event = stripe.webhooks.constructEvent(
-//         request.body,
-//         signature,
-//         process.env.STRIPE_WEBHOOK_KEY
-//       );
-//     } catch (err) {
-//       console.log(`⚠️  Webhook signature verification failed.`, err.message);
-//       return response.sendStatus(400);
-//     }
-//   }
-
-//   // Handle the event
-//   switch (event.type) {
-//     case 'payment_intent.succeeded':
-//       const paymentIntent = event.data.object;
-//       console.log(`PaymentIntent for ${paymentIntent.amount} was successful!`);
-//       // Then define and call a method to handle the successful payment intent.
-//       // handlePaymentIntentSucceeded(paymentIntent);
-//       break;
-//     case 'payment_method.attached':
-//       const paymentMethod = event.data.object;
-//       // Then define and call a method to handle the successful attachment of a PaymentMethod.
-//       // handlePaymentMethodAttached(paymentMethod);
-//       break;
-//     default:
-//       // Unexpected event type
-//       console.log(`Unhandled event type ${event.type}.`);
-//   }
-
-//   // Return a 200 response to acknowledge receipt of the event
-//   response.send();
-// });
-
 
 
 router.get('/success' , async (req,res) => {
@@ -135,18 +91,18 @@ router.get('/success' , async (req,res) => {
         if(orderType && orderType === 'cash') {
             // const order = await db.select().from(orderTable).where(eq(orderTable.orderId, orderId));
             // if(order.length === 0) return res.redirect('/order/cancel');
-            return res.send({message: 'Thanks for your order and it will be ready soon'});
+            return res.redirect('http://localhost:5173/order-success');
         }
 
         // if the payment  is online 
         const order = await db.select().from(orderTable).where(eq(orderTable.checkoutId, session_id));
-        if(order.length === 0) return res.redirect('/order/cancel');
+        if(order.length === 0) return res.redirect('http://localhost:5173/order-failed');
         if(order[0].checkoutCompleted == true) return res.redirect('http://localhost:5173/');
         const updated_order =  await db.update(orderTable).set({
             checkoutCompleted:true,  
         }).where(eq(orderTable.checkoutId, session_id)).returning();
         io.emit('newOrder', updated_order[0]);
-        res.send({message:'Thanks for your order and it will be ready soon'});
+        res.redirect('http://localhost:5173/order-success');
          
     } catch (e) {
         res.status(400).send({error:'bad request', message:'something wrong happend.Try again'});

@@ -1,5 +1,6 @@
+import bcrypt from "bcryptjs";
 import { body,checkExact,validationResult } from "express-validator";
-import { eq } from 'drizzle-orm';
+import { eq, min } from 'drizzle-orm';
 import { db } from "../db/db.js";
 import { usersTable } from "../db/schema.js";
 import { passwordChecker } from "../utils/passwordHasMaker.js";
@@ -9,7 +10,7 @@ export const signUpbodyChecker = () => {
         body('fullName').isString().notEmpty(),
         body('email').isEmail().notEmpty(),
         body('phone').isMobilePhone(),
-        body('password').isString(),
+        body('password').isString().isLength({min:8}),
         body('fullAddress').isString().notEmpty(),
         body('postCode').isString().notEmpty(),
     ]);
@@ -84,19 +85,20 @@ export async  function userSessionMiddleware(req,res,next) {
 export const updateBodyChecker = () => {
     return checkExact([
         body('fullName').optional().isString(),
-        body('email').optional().isEmail(),
+        body('email').optional().isString(),
         body('phone').optional().isMobilePhone(),
         body('fullAddress').optional().isString(),
         body('postCode').optional().isString(),
         body('newPassword').optional().isString(),
-        body('confirmNewPassword').optional().isString(),
-        body('currentPassword').notEmpty().isString(),
+        body('newConfirmPassword').optional().isString(),
+        body('password').notEmpty().isString(),
     ]);
 }
 
 export async function userUpdateMiddleware(req,res,next){
     try {
         const bodyValidationResult = validationResult(req).array();
+        console.log(bodyValidationResult);
         if(bodyValidationResult.length) {
             return res.status(400).send({
                 error:'bad request',
@@ -106,14 +108,14 @@ export async function userUpdateMiddleware(req,res,next){
         
         // check if the given user password is correct;
         const user = await db.select().from(usersTable).where(eq(usersTable.id, req.session.user_id));
-            const isPasswordCorrect = passwordChecker(req.body.currentPassword, user[0].password);
+            const isPasswordCorrect = passwordChecker(req.body.password, user[0].password);
             if(!isPasswordCorrect) {
                 return res.status(401).send({
                     error:'Unauthorized',
                     message:'Please provide the correct password',
                 });
             }
-
+            console.log(isPasswordCorrect);
         const allowed_keys = ['fullName','email','phone','fullAddress','postCode','newPassword','confirmNewPassword','currentPassword']
         // delete the body property if it has any empty value
         for (let x in req.body){
@@ -123,6 +125,7 @@ export async function userUpdateMiddleware(req,res,next){
         }
         next()
     } catch (e) {
+        console.log(e);
         res.status(500).send({
             error:'server crushed',
             message:'Server failed.Please try again',

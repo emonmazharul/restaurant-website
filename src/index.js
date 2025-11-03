@@ -23,7 +23,6 @@ const publicPath = path.join(__dirname, '..' , 'public')
 const app = express();
 app.use(express.static(publicPath))
 
-
 app.use(cors({origin:'http://localhost:5173',credentials:true}))
 app.use(express.urlencoded({extended:true}))
 app.use(express.json())

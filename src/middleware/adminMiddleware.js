@@ -22,7 +22,7 @@ export default async  function adminMiddleWare(req,res,next) {
     } catch (e ) {
         res.send({
             error:'server problem',
-            message:'Serve crushed. Please try again',
+            message:'Server crushed. Please try again',
         })
 
     }   

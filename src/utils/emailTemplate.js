@@ -1,5 +1,4 @@
 export function emailHTMLTemplate(reservation, restaurantName = "Your Restaurant") {
-    console.log(reservation);
   if (!reservation) throw new Error("Reservation data is required.");
 
   const { fullName, booking_date, booking_time, guests, special_request } = reservation;

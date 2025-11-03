@@ -1,0 +1,11 @@
+# Allow all search engines to crawl your site
+User-agent: *
+Allow: /
+
+# Disallow pages that shouldn't appear in search results
+Disallow: /login
+Disallow: /signup
+Disallow: /checkout
+
+# Location of your sitemap
+Sitemap: https://yourrestaurant.com/sitemap.xml

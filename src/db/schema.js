@@ -2,14 +2,13 @@ import { sql } from 'drizzle-orm';
 import {int,integer,sqliteTable, text,} from 'drizzle-orm/sqlite-core'
 
 export const usersTable = sqliteTable("users_table", {
-  id: text().primaryKey({}),
+  id: text().notNull().primaryKey(),
   fullName: text().notNull(),
   email: text().notNull().unique(),
   fullAddress:text().notNull(),
   postCode: text().notNull(),
   password: text().notNull(),
   phone: text().notNull(),
-
 });
 
 

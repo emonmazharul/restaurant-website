@@ -5,6 +5,7 @@ import  {body,checkExact, validationResult} from 'express-validator'
 import { db } from "../db/db.js";
 import { usersTable } from "../db/schema.js";
 import adminMiddleWare from "../middleware/adminMiddleware.js";
+import { rateLimitMiddleware } from "../middleware/rate.limitMiddleware.js";
 
 const router = new Router();
 
@@ -17,7 +18,7 @@ export const adminLoginBodyChecker = () => {
 
 
 
-router.post('/login', adminLoginBodyChecker(),  async (req,res) => {
+router.post('/login', rateLimitMiddleware ,adminLoginBodyChecker(),  async (req,res) => {
     req.session.admin_id = undefined;
     try {
         const bodyValidationResult = validationResult(req).array();

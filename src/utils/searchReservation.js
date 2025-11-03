@@ -5,7 +5,6 @@ import { reservationTable } from "../db/schema.js";
 export async function searchReservation(id) {
     try {
         const reservation = await db.select().from(reservationTable).where(eq(reservationTable.id, id));
-        console.log(reservation[0]);
         if(reservation[0]) return reservation[0];
         return;
     } catch (e) {
