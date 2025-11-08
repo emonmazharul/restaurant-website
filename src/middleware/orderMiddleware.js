@@ -1,4 +1,5 @@
 import { body,checkExact,validationResult } from "express-validator";
+import { cartChecker } from '../utils/validCart.js';
 
 const keys = ['cart', 'fullName', 'email', 'phone', 'paymentMethod', 
     'orderType', 'fullAddress', 'postCode', 'specialRequest', 'totalPrice', 'deliveryTime'];
@@ -21,6 +22,7 @@ export const bodyChecker = () => {
 }
 
 export async function orderMiddleWare(req,res,next) {
+    
     const bodyValidationResult = validationResult(req).array();
     if(bodyValidationResult.length) {
         return res.status(400).send({
@@ -29,6 +31,15 @@ export async function orderMiddleWare(req,res,next) {
             message:'Invalid values for making an order.Please read ther error reasons'
         })
     }
+
+    const isValidCart = cartChecker(req.body.cart);
+    if(isValidCart === false) {
+         return res.status(400).send({
+            error:'bad request',
+            message:'Please provide correct cart information.',
+        });
+    }
+    
     if(req.body.orderType === 'delivery' && !req.body.fullAddress && !req.body.postCode) {
         return res.status(400).send({
             error:'bad request',
@@ -39,7 +50,7 @@ export async function orderMiddleWare(req,res,next) {
         delete req.body.postCode;
         delete req.body.fullAddress;
     } 
-    req.body.totalPrice = req.body.totalPrice.toFixed(2);
+    req.body.totalPrice = Number(req.body.totalPrice.toFixed(2));
     next();
 }
 

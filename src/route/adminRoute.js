@@ -26,7 +26,7 @@ router.post('/login', rateLimitMiddleware ,adminLoginBodyChecker(),  async (req,
         if(bodyValidationResult.length) {
             return res.status(400).send({
                 error:'bad request',
-                message:'Please provide requied informaiton',
+                message:'Please provide required informaiton',
             })
         }  
         const user = await db.select().from(usersTable).where(eq(usersTable.email, req.body.email));

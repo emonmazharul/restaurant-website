@@ -22,7 +22,9 @@ io.on('connection', (socket) => {
     })
 })
 
-myServer.listen(process.env.PORT, (err) => {
+myServer.listen(process.env.PORT || 5000, (err) => {
     if(err) throw err
     console.log(`server is listening on port ${process.env.PORT}`);
 })
+
+export default myServer;

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db } from "../db/db.js";
+import { body,checkExact,validationResult } from "express-validator";
 import { desc, eq } from "drizzle-orm";
 import { reservationTable } from '../db/schema.js';
 import { emailSender } from "../utils/sendEmail.js";
@@ -50,12 +51,31 @@ router.post('/', bodyChecker(), reservationBodyMiddleware, async (req,res) => {
     }
 })
 
+const bodyCheckerForConfirmReservation = () => {
+    return checkExact([
+        body('id').notEmpty(),
+        body('fullName').isString().notEmpty(),
+        body('email').isEmail().notEmpty(),
+        body('phone').isMobilePhone(),
+        body('guests').isNumeric(),
+        body('booking_date').isString().notEmpty(),
+        body('booking_time').isString().notEmpty(),
+        body('special_request').optional().trim(),
+    ]);
+}
+
 const middleWare = (req,res,next) => {
-    if(!req.body) return res.status(400).send({error:'bad request', message:'please provide necessary information.'});
+    const bodyValidationResult = validationResult(req).array();
+    if(bodyValidationResult.length) {
+        return res.status(400).send({
+            error:'bad request',
+            message:'Please provide all required information.Thanks'
+        })
+    }
     next();
 }
 
-router.post('/confirm-reservation', middleWare, adminMiddleWare, async (req,res) => {
+router.post('/confirm-reservation', bodyCheckerForConfirmReservation() , middleWare, adminMiddleWare, async (req,res) => {
     try {
         const response = await emailSender(req.body);
         if(response.error) {

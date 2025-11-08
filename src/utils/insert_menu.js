@@ -7,11 +7,16 @@ import {startar,traditional,tandoori,rice,bread,biryani} from './menu_item.js'
 export async function InsertItems(values){
     try {
         const menu = await db.insert(menuTable).values(values).returning();
-        console.log(menu);
     } catch(e) {
         console.log(e);
     }
 }
+// await InsertItems(startar)
+// await InsertItems(traditional)
+// await InsertItems(tandoori)
+// await InsertItems(rice)
+// await InsertItems(bread)
+// await InsertItems(biryani)
 
 
 export async function deleteItems() {
@@ -24,3 +29,5 @@ export async function deleteItems() {
         console.log(e);
     }
 }
+
+export default InsertItems;

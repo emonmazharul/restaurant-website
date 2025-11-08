@@ -12,15 +12,15 @@ import orderRouter from './route/orderRoute.js'
 import adminRouter from './route/adminRoute.js'
 import saleRouter from './route/saleRoute.js'
 import testRouter from './route/testRoute.js'
+import InsertItems from './utils/insert_menu.js';
 
-// const db = drizzle(process.env.DB_FILE_NAME);
-// await (bread)
-// await db.delete(orderTable);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const publicPath = path.join(__dirname, '..' , 'public')
 
-const app = express();
+export const app = express();
+app.set('trust proxy', 1);
 app.use(express.static(publicPath))
 
 app.use(cors({origin:'http://localhost:5173',credentials:true}))

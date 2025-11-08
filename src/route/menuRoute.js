@@ -55,8 +55,7 @@ router.get('/', async (req,res) => {
         }) 
 
     } catch(e ){
-        console.log (e);
-        return res.status(400).send({
+        return res.status(500).send({
             error:'bad request',
             message:e.message,
         })
@@ -81,10 +80,9 @@ router.post('/', addMenuBodyChecker(), adminMiddleWare , async (req,res) => {
             name:req.body.name,
             price:req.body.price,
             category:req.body.category,
-            lastUpdate:Date.now(),
         }).returning();
         res.status(201).send({
-            message:' Successfully added new product',
+            message:'Successfully added new product',
             data: menu[0]
         })
     } catch (e) {

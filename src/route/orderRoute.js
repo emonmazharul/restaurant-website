@@ -2,11 +2,13 @@ import Router from 'express'
 import Stripe from 'stripe';
 import { v4 as uuid } from 'uuid';
 import { db } from '../db/db.js';
-import { orderTable,salesTable } from '../db/schema.js';
+import { orderTable } from '../db/schema.js';
 import { eq,desc } from 'drizzle-orm';
 import { bodyChecker, orderMiddleWare } from '../middleware/orderMiddleware.js';
 import { checkoutProductData } from '../utils/checkProductData.js';
 import adminMiddleWare from '../middleware/adminMiddleware.js';
+import { addSale } from '../utils/addSale.js';
+
 import { io } from '../server.js';
 
 
@@ -20,20 +22,10 @@ router.get('/check', adminMiddleWare, (req,res) => {
     res.send({message:'helllo'});
 })
 
-// add sale to the table
-async function addSale(order) {
-    let sale = await db.select().from(salesTable).where(eq(salesTable.saleDate,new Date().toDateString()));
-        if(sale[0]) {
-            await db.update(salesTable).set({
-                totalSale: sale[0].totalSale + order[0].totalPrice,
-            });
-        } else {
-            await db.insert(salesTable).values({
-                totalSale:order[0].totalPrice,
-                saleDate: new Date().toDateString(),
-            });
-        }
-}
+
+
+
+
 
 router.post('/', bodyChecker() ,orderMiddleWare,  async (req,res) => {
     try {
@@ -44,7 +36,7 @@ router.post('/', bodyChecker() ,orderMiddleWare,  async (req,res) => {
                 cart:JSON.stringify(req.body.cart),
                 orderId:uuid(),
             }).returning();
-            addSale(order);
+            addSale(order[0]);
             io.emit('newOrder', order[0]);
             return res.status(201).send({orderId:order[0].orderId, url:`http://localhost:5000/order/success?orderType=cash&orderId=${order[0].orderId}`});
         }
@@ -63,10 +55,11 @@ router.post('/', bodyChecker() ,orderMiddleWare,  async (req,res) => {
             orderId: uuid(),
             checkoutId:session.id,
         }).returning();
-        addSale(order);
         res.status(201).send({orderId:order[0].orderId ,url:session.url});
     } catch (e) {
-        res.status(500).send({error:'server crushed', message:'order failed'});
+        // console.log(e);
+        // res.status(500).send({error:'server crushed', message:'order failed'});
+        res.redirect('/order/cancel');
     }
 });
 
@@ -97,10 +90,16 @@ router.get('/success' , async (req,res) => {
         // if the payment  is online 
         const order = await db.select().from(orderTable).where(eq(orderTable.checkoutId, session_id));
         if(order.length === 0) return res.redirect('http://localhost:5173/order-failed');
+        
+        // if the check is already completed then redirect them to home page again
         if(order[0].checkoutCompleted == true) return res.redirect('http://localhost:5173/');
+        
         const updated_order =  await db.update(orderTable).set({
             checkoutCompleted:true,  
         }).where(eq(orderTable.checkoutId, session_id)).returning();
+        
+        addSale(updated_order[0]);
+        
         io.emit('newOrder', updated_order[0]);
         res.redirect('http://localhost:5173/order-success');
          
@@ -122,9 +121,17 @@ const middleWare = (req,res,next) => {
 
 router.post('/admin-check', middleWare,adminMiddleWare, async (req,res) => {
     try {
-        await db.update(orderTable).set({
+        const order = await db.update(orderTable).set({
             checkedByAdmin:true,
-        }).where(eq(orderTable.orderId, req.body.orderId));
+        }).where(eq(orderTable.orderId, req.body.orderId)).returning();
+        
+        if(order.length === 0) {
+            return res.status(404).send({
+                error:'Could not fond any order',
+                message:'We do not have any order with the give id',
+            });
+        }
+        
         res.status(201).send({
             success:'order updated',
             message:'the order is successfully checked by admin.',

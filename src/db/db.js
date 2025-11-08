@@ -1,4 +1,6 @@
-import {drizzle} from 'drizzle-orm/libsql'
+import { drizzle } from 'drizzle-orm/node-postgres';
 
-export const db = drizzle(process.env.DB_FILE_NAME);
-export const rateLimitDb = drizzle(process.env.RATE_LIMIT_DB_FILE_NAME);
+
+export const db = drizzle(process.env.TEST_DATABASE_URL);
+
+

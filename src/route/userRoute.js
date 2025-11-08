@@ -44,6 +44,7 @@ router.post('/', rateLimitMiddleware, signUpbodyChecker(), userSignUpMiddleware,
 
         req.session.user_id = user[0].id;
         delete user[0].id;
+        delete user[0].password;
         res.status(201).send({
             success:'Sign up successfull',
             message:'Welcome, your registration have been completed.Thanks for be with us.',
@@ -61,6 +62,8 @@ router.post('/login', rateLimitMiddleware ,loginBodyChecker(), userLoginMiddlewa
         // all the check done middleware and if everything is right the fetch user here again and then send it to as part of response;
         const user = await db.select().from(usersTable).where(eq(usersTable.email, req.body.email));        
         req.session.user_id = user[0].id;
+        delete user[0].id; 
+        delete user[0].password;
         res.send({
             success:'Login is succesfull.',
             message: 'Successfully Loged in',
@@ -75,8 +78,6 @@ router.post('/login', rateLimitMiddleware ,loginBodyChecker(), userLoginMiddlewa
 
 router.patch('/', rateLimitMiddleware, updateBodyChecker(), userSessionMiddleware, userUpdateMiddleware , async (req,res) => {
     try {
-        
-        
         // edit the password and is thery any new one update the password with that
         if(req.body.newPassword){
             const passwordSalt =  bcrypt.genSaltSync(8);
@@ -90,7 +91,10 @@ router.patch('/', rateLimitMiddleware, updateBodyChecker(), userSessionMiddlewar
         const updated_user = await db.update(usersTable).set({
             ...req.body,
         }).where(eq(usersTable.id, req.session.user_id)).returning();
+        
         delete updated_user[0].id;
+        delete updated_user[0].password;
+
         res.status(201).send({
             success:'Updated profile successfully',
             message:'Successfully updated your profile.',
@@ -116,16 +120,14 @@ router.post('/logout' , async (req,res) => {
 })
 
 router.post('/forget-password', body('email').isEmail(), async (req,res) => {
-    console.log(req.body);
     try {
         const bodyValidationResult = validationResult(req).array();
-        console.log(bodyValidationResult);
         if(bodyValidationResult.length) return res.status(400).send({error:'invalid email', message:'Please provide a valid email'});
         const user = await db.select().from(usersTable).where(eq(usersTable.email, req.body.email));
         if(user[0] === undefined) return res.status(400).send({error:'invalid email', message:`Could not find a user with the given email`});
         const token = jwt.sign({email:req.body.email}, process.env.TOKEN_SECRET, {expiresIn:'10m'});
         const resetLink = `http://localhost:5173/reset-password/${token}`;
-        const emailResponse = await sendResetPasswordEmail(user[0].fullName, resetLink, req.body.email);
+        const emailResponse = await sendResetPasswordEmail(user[0].fullName, resetLink, ); // replace the admin email with req.body.email
         if(emailResponse.error) return res.status(400).send({error:'email error', message:'could not send email.please try again'});
         return res.status(201).send({success:'send the link', message:'Please check your email for the reset password link'});
     } catch (e) {

@@ -1,70 +1,66 @@
-import { sql } from 'drizzle-orm';
-import {int,integer,sqliteTable, text,} from 'drizzle-orm/sqlite-core'
+import { json,boolean,date,time,integer,serial,numeric, pgTable, varchar,text } from "drizzle-orm/pg-core";
+import { timestamps } from './helpers.js';
 
-export const usersTable = sqliteTable("users_table", {
+export const usersTable = pgTable("users", {
   id: text().notNull().primaryKey(),
-  fullName: text().notNull(),
-  email: text().notNull().unique(),
+  fullName: varchar({length:255}).notNull(),
+  email: varchar({length:255}).notNull().unique(),
   fullAddress:text().notNull(),
   postCode: text().notNull(),
   password: text().notNull(),
   phone: text().notNull(),
+  ...timestamps
 });
 
 
-export const menuTable = sqliteTable("menu", {
-  id:int().primaryKey({autoIncrement:true}),
-  category: text().notNull(),
-  name:text().notNull(),
-  price: int().notNull(),
-  variant : text('', {mode:'json'}),
-  lastUpdate: integer("last_update", { mode: "timestamp" })
-    .default(sql`(unixepoch())`)
-    .notNull(),
+export const menuTable = pgTable("menus", {
+  id:serial(),
+  category: varchar({length:150}).notNull(),
+  name:varchar({length:255}).notNull(),
+  price: numeric({mode:'number'}).notNull(),
+  variant : json(),
+  ...timestamps
 })
 
-export const reservationTable = sqliteTable("reservations", {
-  id:int().primaryKey({autoIncrement:true}),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .default(sql`(unixepoch())`)
-    .notNull(),
-  fullName:text().notNull(),
-  email:text().notNull(),
+export const reservationTable = pgTable("reservations", {
+  id: serial(),
+  fullName:varchar({length:255}).notNull(),
+  email:varchar({length:255}).notNull(),
   phone:text().notNull(),
-  guests:int().notNull(),
-  booking_date:integer({mode:'timestamp'}).notNull(),
-  booking_time:text().notNull(),
+  guests:integer().notNull(),
+  booking_date:date().notNull(),
+  booking_time:time().notNull(),
   special_request:text(),
-  confirmed:integer({mode:'boolean'}).default(false),
+  confirmed:boolean().default(false),
+  ...timestamps
 });
 
-export const orderTable = sqliteTable('order', {
-  id:int().primaryKey({autoIncrement:true}),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .default(sql`(unixepoch())`)
-    .notNull(),
+export const orderTable = pgTable('orders', {
+  id:serial(),
   orderId:text().notNull().unique(),
-  fullName:text().notNull(),
-  email:text().notNull(),
+  fullName:varchar({length:255}).notNull(),
+  email:varchar({length:255}).notNull(),
   phone:text().notNull(),
-  cart:text({mode:'json'}).notNull(),
+  cart:json().notNull(),
   fullAddress:text(),
   postCode:text(),
-  orderType:text().notNull(),
-  paymentMethod:text().notNull(),
+  orderType:varchar({length:50}).notNull(),
+  paymentMethod:varchar({length:50}).notNull(),
   checkoutId:text(),
   deliveryTime:text().notNull().default('ASAP'),
-  totalPrice:integer().notNull(),
-  orderCanceled:integer({mode:'boolean'}).default(false),
-  checkedByAdmin:integer({mode:'boolean'}).default(false),
-  checkoutCompleted:integer({mode:'boolean'}).default(false),
+  totalPrice:numeric({mode:'number'}).notNull(),
+  orderCanceled:boolean().default(false),
+  checkedByAdmin:boolean().default(false),
+  checkoutCompleted:boolean().default(false),
   specialRequest:text(),
+  ...timestamps
 });
 
-export const salesTable = sqliteTable('sale', {
-  id:int().primaryKey({autoIncrement:true}),
-  totalSale:integer().notNull(),
+export const salesTable = pgTable('sales', {
+  id:serial(),
+  totalSale:numeric({mode:'number'}).notNull(),
   saleDate:text().notNull(),
+  ...timestamps
 })
 
 
