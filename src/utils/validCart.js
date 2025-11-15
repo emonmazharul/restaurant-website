@@ -14,7 +14,6 @@ export const cartChecker = (cart => {
       if(isValid == false) break;
 
       for (let x in carItemTypes) {
-        console.log(typeof item[x], carItemTypes[x] )
         if (carItemTypes[x] == typeof item[x]) {
           isValid = true;
         } else {

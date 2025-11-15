@@ -13,18 +13,27 @@ const router = new Router();
 
 router.get('/', adminMiddleWare, async(req,res) =>  {
     try {
-        const reservations = await db.select().from(reservationTable).orderBy(desc(reservationTable.id));
+        const reservations = await db.select({
+            id:reservationTable.id,
+            fullName: reservationTable.fullName,
+            email: reservationTable.email,
+            phone: reservationTable.phone,
+            guests: reservationTable.guests,
+            confirmed: reservationTable.confirmed,
+            booking_date:reservationTable.booking_date,
+            booking_time:reservationTable.booking_time,
+            special_request: reservationTable.special_request,
+        }).from(reservationTable).orderBy(desc(reservationTable.id));
         return res.send({
             message:'fetched reservations from db',
             data: reservations,
         });
     } catch (e) {
-        console.log(e);
+        console.error(e);
         res.status({
             error:'bad request',
             message:'something wront went. Sorry for disruptions',
         })
-        console.log(e);
     }
 })
 
@@ -43,7 +52,7 @@ router.post('/', bodyChecker(), reservationBodyMiddleware, async (req,res) => {
         });
     } catch(e){
         console.log('shwoing error at resevation table')
-        console.log(e);
+        console.error(e);
         res.status(400).send({
             error:'bad request',
             message:'server crushed. Please try again',
@@ -60,16 +69,19 @@ const bodyCheckerForConfirmReservation = () => {
         body('guests').isNumeric(),
         body('booking_date').isString().notEmpty(),
         body('booking_time').isString().notEmpty(),
-        body('special_request').optional().trim(),
+        body('confirmed').isBoolean(),
+        body('special_request').optional(),
     ]);
 }
 
 const middleWare = (req,res,next) => {
+
     const bodyValidationResult = validationResult(req).array();
+
     if(bodyValidationResult.length) {
         return res.status(400).send({
             error:'bad request',
-            message:'Please provide all required information.Thanks'
+            message:'Please only provide all required information.Thanks'
         })
     }
     next();
@@ -89,6 +101,7 @@ router.post('/confirm-reservation', bodyCheckerForConfirmReservation() , middleW
             message:'Reservation has been confirmed',
         })
     } catch (e) {
+        console.error(e);
         return res.status(404).send({error:'bad request', message:'operation failed'});
     }
 })

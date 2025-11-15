@@ -6,14 +6,14 @@ import app from "../src/server.js";
 
 describe('Order api', async () => {
     const agent = request.agent(app);
-    await agent.post('/admin/login').send({
+    await agent.post('/api/admin/login').send({
         email:'mazharuli1999@gmail.com',
         password:'bangla098@'
     })
 
     // should faild to make an order without all required information
     it('should fail to make an order without all the required information', async () => {
-        const res  = await request(app).post('/order')
+        const res  = await request(app).post('/api/order')
         .send({
             fullName:'Dear Customer',
             email:'hello sir how are you',
@@ -29,7 +29,7 @@ describe('Order api', async () => {
     //cash order
     // can't make the order if the cart is not correct type of data
     it('should fail to make an order without all the required information', async () => {
-        const res  = await request(app).post('/order')
+        const res  = await request(app).post('/api/order')
         .send({
             fullName:'Dear Customer',
             email:'dev.mazharul@gmail.com',
@@ -53,7 +53,7 @@ describe('Order api', async () => {
     //delivery order
     // order will fail if the cart is not correct data type
     it('should fail to make an order without all the required information', async () => {
-        const res  = await request(app).post('/order')
+        const res  = await request(app).post('/api/order')
         .send({
             fullName:'Dear Customer',
             email:'dev.mazharul@gmail.com',
@@ -74,43 +74,43 @@ describe('Order api', async () => {
 
 
     it('should fail to see order without admin loged in' , async () => {
-        const res = await request(app).get('/order');
+        const res = await request(app).get('/api/order');
         expect(res.statusCode).toEqual(401);
     })
 
     it('should view all order with admin loged in' , async () => {
-        const res = await agent.get('/order');
+        const res = await agent.get('/api/order');
         expect(res.statusCode).toEqual(200);
         expect(res.body).toHaveProperty('data');
     })
 
     it('it should fail to check the order without amdin loged in', async ()  => {
-        const res = await request(app) .post('/order/admin-check')
+        const res = await request(app) .post('/api/order/admin-check')
         .send({orderId:'false ordr id'});
         expect(res.statusCode).toEqual(401);
     })
 
     it('it should fail to check the order without an valid orderId', async ()  => {
-        const res = await agent.post('/order/admin-check')
+        const res = await agent.post('/api/order/admin-check')
         .send({orderId:'false ordr id'});
         expect(res.statusCode).toEqual(404);
         expect(res.body.message).toEqual('We do not have any order with the give id');
     })
 
     it('it should success to check the order with admin loged id + with a valid order id', async ()  => {
-        const res = await agent.post('/order/admin-check')
+        const res = await agent.post('/api/order/admin-check')
         .send({orderId:'de7b29c6-d91a-4801-aeda-6a8e35727d23'});
         expect(res.statusCode).toEqual(201);
         expect(res.body.message).toEqual('the order is successfully checked by admin.');
     })
 
     it('should redirect the user to the order success page when the paymentType is cash', async ()  => {
-        const res = await agent.get('/order/success?orderType=cash&session_id=none');
+        const res = await agent.get('/api/order/success?orderType=cash&session_id=none');
         expect(res.statusCode).toEqual(302);
     })
 
     it('should redirec the use to order-sucess when the order is paid online and ther is correct checkout id', async ()  => {
-        const res = await agent.get('/order/success?orderType=online&session_id=cs_test_b1nOJe69KkgUR5e8fWAtylVtdn7SuJZcKltaAUOKfG4722rCtLIBIyOwsM');
+        const res = await agent.get('/api/order/success?orderType=online&session_id=cs_test_b1nOJe69KkgUR5e8fWAtylVtdn7SuJZcKltaAUOKfG4722rCtLIBIyOwsM');
         expect(res.statusCode).toEqual(302);
     })
 

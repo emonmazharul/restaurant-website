@@ -38,15 +38,15 @@ router.post('/', bodyChecker() ,orderMiddleWare,  async (req,res) => {
             }).returning();
             addSale(order[0]);
             io.emit('newOrder', order[0]);
-            return res.status(201).send({orderId:order[0].orderId, url:`http://localhost:5000/order/success?orderType=cash&orderId=${order[0].orderId}`});
+            return res.status(201).send({orderId:order[0].orderId, url:`/api/order/success?orderType=cash&orderId=${order[0].orderId}`});
         }
         // create an payment session
         const session = await stripe.checkout.sessions.create({
             customer_email:req.body.email,
             line_items: checkoutProductData(req.body.cart, req.body.orderType),
             mode: 'payment',
-            success_url: 'http://localhost:5000/order/success?session_id={CHECKOUT_SESSION_ID}&orderType=delivery',
-            cancel_url: 'http://localhost:5000/order/cancel',
+            success_url: process.env.SITE_URL +  '/api/order/success?session_id={CHECKOUT_SESSION_ID}&orderType=delivery',
+            cancel_url: process.env.SITE_URL + '/api/order/cancel',
         });
         
         const order = await db.insert(orderTable).values({
@@ -57,6 +57,7 @@ router.post('/', bodyChecker() ,orderMiddleWare,  async (req,res) => {
         }).returning();
         res.status(201).send({orderId:order[0].orderId ,url:session.url});
     } catch (e) {
+        console.log(e);
         // console.log(e);
         // res.status(500).send({error:'server crushed', message:'order failed'});
         res.redirect('/order/cancel');
@@ -84,15 +85,15 @@ router.get('/success' , async (req,res) => {
         if(orderType && orderType === 'cash') {
             // const order = await db.select().from(orderTable).where(eq(orderTable.orderId, orderId));
             // if(order.length === 0) return res.redirect('/order/cancel');
-            return res.redirect('http://localhost:5173/order-success');
+            return res.redirect('/order-success');
         }
 
         // if the payment  is online 
         const order = await db.select().from(orderTable).where(eq(orderTable.checkoutId, session_id));
-        if(order.length === 0) return res.redirect('http://localhost:5173/order-failed');
+        if(order.length === 0) return res.redirect('/order-failed');
         
         // if the check is already completed then redirect them to home page again
-        if(order[0].checkoutCompleted == true) return res.redirect('http://localhost:5173/');
+        if(order[0].checkoutCompleted == true) return res.redirect('/');
         
         const updated_order =  await db.update(orderTable).set({
             checkoutCompleted:true,  
@@ -101,7 +102,7 @@ router.get('/success' , async (req,res) => {
         addSale(updated_order[0]);
         
         io.emit('newOrder', updated_order[0]);
-        res.redirect('http://localhost:5173/order-success');
+        res.redirect('/order-success');
          
     } catch (e) {
         res.status(400).send({error:'bad request', message:'something wrong happend.Try again'});
@@ -109,7 +110,7 @@ router.get('/success' , async (req,res) => {
 })
 
 router.get('/cancel' , (req,res) => {
-    res.send({success:'order failed'});
+    res.redirect('/order-failed')
 })
 
 

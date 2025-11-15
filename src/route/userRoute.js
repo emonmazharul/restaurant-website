@@ -19,6 +19,9 @@ router.get('/', userSessionMiddleware, async (req,res) => {
     
     try {
         const user =  await db.select().from(usersTable).where(eq(usersTable.id, req.session.user_id));
+        delete user[0].id;
+        delete user[0].password;
+        
         res.status(200).send({
             message:'Profile data has been fetched',
             data: user[0],

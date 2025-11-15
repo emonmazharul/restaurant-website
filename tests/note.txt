@@ -1,0 +1,2 @@
+all the usename, email and password used during test is made with faker js or have not been used on production at all
+so fill free.

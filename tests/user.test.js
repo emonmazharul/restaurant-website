@@ -1,15 +1,11 @@
 import "dotenv/config";
 import request from "supertest";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { db } from "../src/db/db.js";
-import { usersTable,orderTable,salesTable,reservationTable, } from "../src/db/schema.js";
 import app from "../src/server.js";
 import { faker } from '@faker-js/faker';
-import { eq,where } from "drizzle-orm";
 import { v4 as uuid } from 'uuid';
-import { passwordHashMaker } from "../src/utils/passwordHasMaker.js";
-import { expect } from "vitest";
-import { except } from "drizzle-orm/gel-core";
+// import { passwordHashMaker } from "../src/utils/passwordHasMaker.js";
+
 
 
 const password = 'UxvcCK5ihNA5MUL';
@@ -30,10 +26,6 @@ describe("Users API", () => {
         fullAddress:faker.location.streetAddress(),
         postCode:faker.location.zipCode(),
     };
-    // const newUser = await db.insert(usersTable).values({
-    //   ...newUserValue,
-    //   password:passwordHashMaker(newUserValue.password)
-    // }).returning();
   });
 
   afterAll(async () => {
@@ -41,8 +33,8 @@ describe("Users API", () => {
     await db.$client?.end?.();
   });
 
-  it("GET /users should return a 400 error", async () => {
-    const res = await request(app).get("/user");
+  it("GET /api/users should return a 400 error", async () => {
+    const res = await request(app).get("/api/user");
     expect(res.status).toBe(401);
     // expect(Array.isArray(res.body)).toBe(true);
   });
@@ -56,7 +48,7 @@ describe("Users API", () => {
         postCode:faker.location.zipCode(),
     };
     const res = await request(app)
-        .post("/user")
+        .post("/api/user")
         .send(newUserValue)
         
     expect(res.status).toBe(400);
@@ -75,7 +67,7 @@ describe("Users API", () => {
         postCode:faker.location.zipCode(),
     };
     const res = await request(app)
-        .post("/user")
+        .post("/api/user")
         .send(newUserValue)
         
     expect(res.status).toBe(400);
@@ -84,17 +76,17 @@ describe("Users API", () => {
     expect(res.body.message).toEqual('Please use another email as the email is already registered');
   });
 
-  it("login/user with invalid information should return a 400", async () => {
+  it("login/api/user with invalid information should return a 400", async () => {
     const userCredential = {email:faker.internet.email(), password:'wrongpassword'};
     const res = await request(app)
-        .post("/user/login")
+        .post("/api/user/login")
         .send(userCredential)
         
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('message');
   });
 
-  it("login/user with valid information should return a 200", async () => {
+  it("login/api/user with valid information should return a 200", async () => {
 
     const userCredential = {email, password};
     const userFromDb = {
@@ -108,7 +100,7 @@ describe("Users API", () => {
       "deleted_at": null
     }
     const res = await request(app)
-        .post("/user/login")
+        .post("/api/user/login")
         .send(userCredential)
           expect(res.status).toBe(200);
           expect(res.body).toHaveProperty('data');
@@ -120,13 +112,13 @@ describe("Users API", () => {
   });
 
   it('should logout user succesfully', async () => {
-    const res = await request(app).post('/user/logout');
+    const res = await request(app).post('/api/user/logout');
     expect(res.statusCode).toEqual(200);
   })
 
   it('should not let someone update information without logged in ', async () => {
     const res = await request(app)
-      .patch('/user')
+      .patch('/api/user')
       .send({fullName:'Donald Trump'})
       .set('Accept', 'application/json');
       expect(res.body).toHaveProperty('error');
@@ -137,11 +129,11 @@ describe("Users API", () => {
     const agent = request.agent(app);
 
     const loginRes = await agent
-      .post("/user/login")
+      .post("/api/user/login")
       .send({email, password})
       .expect(200);
     expect(loginRes.body).toHaveProperty("data");
-    const profileRes = await agent.patch('/user')
+    const profileRes = await agent.patch('/api/user')
     .send({
       fullName:'My new Name'
     })
@@ -153,11 +145,11 @@ describe("Users API", () => {
    it('should let user update profile after login with a valid session and provided current password ', async () => {
     const agent = request.agent(app);
     const loginRes = await agent
-      .post("/user/login")
+      .post("/api/user/login")
       .send({email, password})
       .expect(200);
     expect(loginRes.body).toHaveProperty("data");
-    const profileRes = await agent.patch('/user')
+    const profileRes = await agent.patch('/api/user')
     .send({
       fullName:'My new Name',
       password
@@ -172,11 +164,11 @@ describe("Users API", () => {
     const agent = request.agent(app);
 
     const loginRes = await agent
-      .post("/user/login")
+      .post("/api/user/login")
       .send({email, password})
       .expect(200);
     expect(loginRes.body).toHaveProperty("data");
-    const profileRes = await agent.patch('/user')
+    const profileRes = await agent.patch('/api/user')
     .send({
       newPassword:'newPassword',
       password
@@ -189,11 +181,11 @@ describe("Users API", () => {
   //   const agent = request.agent(app);
     
   //   const loginRes = await agent
-  //     .post("/user/login")
+  //     .post("/api/user/login")
   //     .send({email, password})
   //     .expect(200);
   //   expect(loginRes.body).toHaveProperty("data");
-  //   const profileRes = await agent.patch('/user')
+  //   const profileRes = await agent.patch('/api/user')
   //   .send({
   //     newPassword:'newPassword',
   //     newConfirmPassword:'newPassword',
@@ -204,12 +196,12 @@ describe("Users API", () => {
 
 
   it('should fail without giving an email for requesting a forget password', async () => {
-    const res = await request(app).post('/user/forget-password');
+    const res = await request(app).post('/api/user/forget-password');
     expect(res.statusCode).toEqual(400);
   })
 
   it('should fail to request a password reset if the email is not registered', async () => {
-    const res = await request(app).post('/user/forget-password')
+    const res = await request(app).post('/api/user/forget-password')
     .send({email:'empty@gmail.com'});
     expect(res.statusCode).toEqual(400);
     expect(res.body.error).toEqual('invalid email')
@@ -218,7 +210,7 @@ describe("Users API", () => {
 
 
   //  it('should successfullu request a forget password with an valid registered email', async () => {
-  //   const res = await request(app).post('/user/forget-password')
+  //   const res = await request(app).post('/api/user/forget-password')
   //   .send({email});
   //   expect(res.statusCode).toEqual(201);
   //   expect(res.body.success).toEqual('send the link');
@@ -228,7 +220,7 @@ describe("Users API", () => {
 
   // reset password
   it('should fail to reset a password without a valid token and two confirmed new passwords ', async () => {
-    const res = await request(app).post('/user/reset-password')
+    const res = await request(app).post('/api/user/reset-password')
     .send({
       newPassword:'my password',
       confirmedNewPassword:'my password'
@@ -239,13 +231,13 @@ describe("Users API", () => {
   // reset password
 
   it('should fail to check the data if resetToken param is not a type of token string ', async () => {
-      const res = await request(app).get('/user/reset-password/' + 'some token')
+      const res = await request(app).get('/api/user/reset-password/' + 'some token')
       expect(res.statusCode).toEqual(400);
       expect(res.body.error).toEqual('invalid token');
     })
 
   it('should fail to check the reset password info without a valid token ', async () => {
-      const res = await request(app).get('/user/reset-password/' + token)
+      const res = await request(app).get('/api/user/reset-password/' + token)
       expect(res.statusCode).toEqual(400);
       expect(res.body.error).toEqual('request expired');
     })
@@ -253,7 +245,7 @@ describe("Users API", () => {
   // fail to get reset password
 
   it('should fail to reset a password with a invalid or expiry token ', async () => {
-    const res = await request(app).post('/user/reset-password')
+    const res = await request(app).post('/api/user/reset-password')
     .send({
       resetToken:falseToken,
       newPassword:'my password',
@@ -264,7 +256,7 @@ describe("Users API", () => {
   })
 
   it('should fail to reset a password without both password being same ', async () => {
-    const res = await request(app).post('/user/reset-password')
+    const res = await request(app).post('/api/user/reset-password')
     .send({
       resetToken:token,
       newPassword:'UxvcCK5ihNA5MUL',
@@ -275,7 +267,7 @@ describe("Users API", () => {
   })
 
   // it('should not able to change password when re enter his old password again ', async () => {
-  //   const res = await request(app).post('/user/reset-password')
+  //   const res = await request(app).post('/api/user/reset-password')
   //   .send({
   //     resetToken:token,
   //     newPassword:password,
@@ -286,7 +278,7 @@ describe("Users API", () => {
   // })
 
   // it('should able to change to passwordd with valid token + when both password does match ', async () => {
-  //   const res = await request(app).post('/user/reset-password')
+  //   const res = await request(app).post('/api/user/reset-password')
   //   .send({
   //     resetToken:token,
   //     newPassword:'UxvcCK5ihNA5MUL',
