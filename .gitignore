@@ -5,3 +5,4 @@ rate-limit.db
 plan.txt
 package-lock.json
 src/route/anwar-res-backend.code-workspace
+ecosystem.config.cjs
