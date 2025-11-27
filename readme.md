@@ -51,6 +51,5 @@ The project includes a fully responsive frontend, a robust backend API, automate
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/myindianrestaurant.git
-cd myindianrestaurant
+git clone https://github.com/emonmazharul/restaurant-website
 
